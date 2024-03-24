@@ -1,0 +1,191 @@
+---
+- name: Check if docker is installed
+  ansible.builtin.stat:
+    path: /usr/bin/docker
+  register: docker_installed
+
+- name: End the play if docker is not installed
+  ansible.builtin.meta: end_host
+  when: not docker_installed.stat.exists
+
+- name: Install required packages
+  ansible.builtin.package:
+    name: "{{ pkg }}"
+    state: present
+  loop: 
+    - git
+    - python3
+    - python3-pip
+  loop_control:
+    loop_var: pkg
+
+- name: Check if elastic_container was already installed here
+  ansible.builtin.stat:
+    path: "{{ ludus_elastic_container_install_path }}/docker-compose.yml"
+  register: elastic_container_installed
+
+- name: End the playbook if elastic is already installed
+  ansible.builtin.meta: end_host
+  when: elastic_container_installed.stat.exists
+
+- name: Get the source code
+  ansible.builtin.git:
+    repo: https://github.com/peasead/elastic-container
+    dest: "{{ ludus_elastic_container_install_path }}"
+    version: "{{ elastic_container_branch }}"
+    single_branch: true
+
+- name: Copy the .env template to the host
+  ansible.builtin.template:
+    src: files/env.example
+    dest: "{{ ludus_elastic_container_install_path }}/.env"
+    mode: "0600"
+
+- name: Gather facts (need RAM of the host to dynamically allocate memory in bytes to .env)
+  setup:
+
+- name: Register memory of the host to replace in .env file and register only 75% of the memory
+  set_fact:
+    host_memory_bytes: "{{ ansible_memtotal_mb * 1024 * 1024 * 0.75 }}"
+
+- name: Memory being used by Kibana
+  ansible.builtin.debug:
+    msg: "Host mem: {{ host_memory_bytes }}"
+
+- name: Replace memreplaceme in .env file with the memory of the host
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/.env"
+    regexp: 'memchangeme'
+    replace: "{{ host_memory_bytes }}"
+
+- name: Replace stackreplace me in .env file with the ludus_elastic_stack_version
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/.env"
+    regexp: 'stackchangeme'
+    replace: "{{ ludus_elastic_stack_version }}"
+
+- name: Replace passchangeme in .env file with the ludus_elastic_password
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/.env"
+    regexp: 'passchangeme'
+    replace: "{{ ludus_elastic_password }}"
+    backup: yes
+
+- name: Move and replace kibana.yml file to the host
+  ansible.builtin.copy:
+    src: files/kibana.yml
+    dest: "{{ ludus_elastic_container_install_path }}/kibana.yml"
+    mode: "0644"
+
+- name: Replace elastichostchangeme in files/kibana.yml file with the ansible_host
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/kibana.yml"
+    regexp: 'elastichostchangeme'
+    replace: "{{ ansible_host }}"
+
+- name: Replace passchangeme in files/kibana.yml files with the ludus_elastic_password
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/kibana.yml"
+    regexp: 'passchangeme'
+    replace: "{{ ludus_elastic_password }}"
+
+- name: Running ./elastic-container.sh start in the {{ ludus_elastic_container_install_path }} directory
+  ansible.builtin.shell: ./elastic-container.sh start
+  args:
+    chdir: "{{ ludus_elastic_container_install_path }}"
+  register: elastic_container_start
+  ignore_errors: true
+
+- name: Wait for the container to be listening on port 5601
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: 5601
+    state: started
+    delay: 5
+    timeout: 300
+
+- name: Get Elastic agents if needed
+  run_once: true
+  block:
+    - name: Create /opt/ludus/resources/windows directory if it doesn't exist
+      ansible.builtin.file:
+        path: /opt/ludus/resources/windows
+        state: directory
+        recurse: true
+      delegate_to: localhost
+
+    - name: Check if Windows agent exists
+      ansible.builtin.stat:
+        path: /opt/ludus/resources/windows/elastic-agent-{{ ludus_elastic_stack_version }}-windows-x86_64.zip
+      delegate_to: localhost
+      register: windows_agent_exists
+
+    - name: Download the Windows agent
+      ansible.builtin.get_url:
+        url: "https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-{{ ludus_elastic_stack_version }}-windows-x86_64.zip"
+        dest: /opt/ludus/resources/windows/elastic-agent-{{ ludus_elastic_stack_version }}-windows-x86_64.zip
+        mode: "0644"
+      delegate_to: localhost
+      when: not windows_agent_exists.stat.exists
+
+    - name: Create /opt/ludus/resources/linux directory if it doesn't exist
+      ansible.builtin.file:
+        path: /opt/ludus/resources/linux
+        state: directory
+        recurse: true
+      delegate_to: localhost
+
+    - name: Check if Linux agent exists
+      ansible.builtin.stat:
+        path: /opt/ludus/resources/linux/elastic-agent-{{ ludus_elastic_stack_version }}-linux-x86_64.tar.gz
+      delegate_to: localhost
+      register: linux_agent_exists
+
+    - name: Download the Linux agent
+      ansible.builtin.get_url:
+        url: "https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-{{ ludus_elastic_stack_version }}-linux-x86_64.tar.gz"
+        dest: /opt/ludus/resources/linux/elastic-agent-{{ ludus_elastic_stack_version }}-linux-x86_64.tar.gz
+        mode: "0644"
+      delegate_to: localhost
+      when: not linux_agent_exists.stat.exists
+
+- name: Move kibana-setup.py file to the host
+  ansible.builtin.copy:
+    src: files/kibana-setup.py
+    dest: "{{ ludus_elastic_container_install_path }}/kibana-setup.py"
+    mode: "0700"
+
+- name: Replace values in kibana-setup.py file
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/kibana-setup.py"
+    regexp: 'fleetserverchangeme'
+    replace: '{{ ansible_host }}'
+    backup: yes
+
+- name: Move requirements.txt file to the host
+  ansible.builtin.copy:
+    src: files/requirements.txt
+    dest: "{{ ludus_elastic_container_install_path }}/requirements.txt"
+    mode: "0600"
+
+- name: Install the required python packages
+  ansible.builtin.pip:
+    requirements: "{{ ludus_elastic_container_install_path }}/requirements.txt"
+    executable: pip3
+    extra_args: --break-system-packages
+
+- name: Run kibana-setup.py
+  ansible.builtin.shell: python3 ./kibana-setup.py
+  args:
+    chdir: "{{ ludus_elastic_container_install_path }}"
+  register: kibana_setup
+  ignore_errors: true
+
+- name: Output the kibana-setup.py output
+  ansible.builtin.debug:
+    msg: "{{ kibana_setup.stdout_lines }}"
+
+- name: Alert
+  ansible.builtin.debug:
+    msg: |
+      Elastic Container Project is up and running. Access it at https://{{ ansible_host }}:5601 Access with: elastic:{{ ludus_elastic_password }}
