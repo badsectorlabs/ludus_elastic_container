@@ -17,6 +17,8 @@
     - git
     - python3
     - python3-pip
+    - curl
+    - jq
   loop_control:
     loop_var: pkg
 
@@ -25,9 +27,20 @@
     path: "{{ ludus_elastic_container_install_path }}/docker-compose.yml"
   register: elastic_container_installed
 
+- name: Check for healthy containers
+  ansible.builtin.shell: docker ps --format {% raw %}'{{json .}}'{% endraw %} | jq -r 'select(.Status | test("healthy") | not) | .Names'
+  register: not_healthy
+
+- name: Check for up containers
+  ansible.builtin.shell: docker ps --format {% raw %}'{{json .}}'{% endraw %} | jq -r 'select(.Status | test("Up") | not) | .Names'
+  register: not_up
+
 - name: End the playbook if elastic is already installed
   ansible.builtin.meta: end_host
-  when: elastic_container_installed.stat.exists
+  when:
+    - elastic_container_installed.stat.exists
+    - not_healthy.stdout | trim == "ecp-fleet-server" # ecp-fleet-server doesn't have health checks
+    - not_up.stdout | trim | length == 0
 
 - name: Get the source code
   ansible.builtin.git:
@@ -35,6 +48,7 @@
     dest: "{{ ludus_elastic_container_install_path }}"
     version: "{{ elastic_container_branch }}"
     single_branch: true
+    force: true
 
 - name: Copy the .env template to the host
   ansible.builtin.template:
@@ -95,7 +109,7 @@
   args:
     chdir: "{{ ludus_elastic_container_install_path }}"
   register: elastic_container_start
-  ignore_errors: true
+  timeout: 500
 
 - name: Wait for the container to be listening on port 5601
   ansible.builtin.wait_for:
