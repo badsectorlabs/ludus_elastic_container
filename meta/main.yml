@@ -26,4 +26,4 @@ galaxy_info:
     - kibana
     - elasticsearch
     - fleet
-    - elastic_container
+    - elasticcontainer
