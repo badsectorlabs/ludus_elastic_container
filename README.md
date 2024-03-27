@@ -44,9 +44,9 @@ ludus:
     hostname: "{{ range_id }}-elastic-server"
     template: debian-12-x64-server-template
     vlan: 20
-    ip_last_octet: 23
-    ram_gb: 4
-    cpus: 2
+    ip_last_octet: 2
+    ram_gb: 8
+    cpus: 4
     linux: true
     testing:
       snapshot: false
