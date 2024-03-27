@@ -109,7 +109,16 @@
   args:
     chdir: "{{ ludus_elastic_container_install_path }}"
   register: elastic_container_start
-  timeout: 500
+  async: 1200 # 20 minutes
+  poll: 0
+
+- name: Wait for elastic-container.sh start
+  ansible.builtin.async_status:
+    jid: "{{ elastic_container_start.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 120 # 20 muinutes
+  delay: 10
 
 - name: Wait for the container to be listening on port 5601
   ansible.builtin.wait_for:
