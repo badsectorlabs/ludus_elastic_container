@@ -109,6 +109,8 @@
   args:
     chdir: "{{ ludus_elastic_container_install_path }}"
   register: elastic_container_start
+  retries: 3
+  delay: 3
   async: 1200 # 20 minutes
   poll: 0
 
