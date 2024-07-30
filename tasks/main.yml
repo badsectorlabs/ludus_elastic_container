@@ -1,13 +1,26 @@
 ---
-- name: Check if docker is installed
-  ansible.builtin.stat:
-    path: /usr/bin/docker
-  register: docker_installed
+- name: Gather facts
+  ansible.builtin.setup:
 
-- name: Fail the play if docker is not installed
-  ansible.builtin.fail:
-    msg: "Docker must be installed to run the elastic container"
-  when: not docker_installed.stat.exists
+- name: Ensure Docker is installed
+  block:
+    - name: Check if Docker is installed
+      ansible.builtin.command: which docker
+      register: docker_installed
+      ignore_errors: true
+      changed_when: false
+
+    - name: Install Docker if not installed
+      ansible.builtin.package:
+        name: docker
+        state: present
+      when: docker_installed.rc != 0
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
 
 - name: Install required packages
   ansible.builtin.package:
@@ -27,20 +40,24 @@
     path: "{{ ludus_elastic_container_install_path }}/docker-compose.yml"
   register: elastic_container_installed
 
-- name: Check for healthy containers
-  ansible.builtin.shell: docker ps --format {% raw %}'{{json .}}'{% endraw %} | jq -r 'select(.Status | test("healthy") | not) | .Names'
-  register: not_healthy
-
-- name: Check for up containers
-  ansible.builtin.shell: docker ps --format {% raw %}'{{json .}}'{% endraw %} | jq -r 'select(.Status | test("Up") | not) | .Names'
-  register: not_up
+- name: Check Docker health status
+  ansible.builtin.shell:
+    cmd: >-
+      docker ps --format '{{ "{{" }}json .{{ "}}" }}' |
+      jq -r 'select(.Status | test("Up") | not) | .Names'
+  register: docker_health_check
+  changed_when: false
+  failed_when:
+    - docker_health_check.rc != 0
+    - docker_health_check.stdout | length > 0
+  args:
+    executable: /bin/bash
 
 - name: End the playbook if elastic is already installed
   ansible.builtin.meta: end_host
   when:
     - elastic_container_installed.stat.exists
-    - not_healthy.stdout | trim == "ecp-fleet-server" # ecp-fleet-server doesn't have health checks
-    - not_up.stdout | trim | length == 0
+    - docker_health_check.stdout | trim | length == 0
 
 - name: Get the source code
   ansible.builtin.git:
@@ -65,24 +82,24 @@
 
 - name: Memory being used by Kibana
   ansible.builtin.debug:
-    msg: "Host mem: {{ host_memory_bytes }}"
+    msg: "Host memory: {{ host_memory_bytes }}"
 
 - name: Replace memreplaceme in .env file with the memory of the host
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
-    regexp: 'memchangeme'
+    regexp: "memchangeme"
     replace: "{{ host_memory_bytes }}"
 
 - name: Replace stackreplace me in .env file with the ludus_elastic_stack_version
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
-    regexp: 'stackchangeme'
+    regexp: "stackchangeme"
     replace: "{{ ludus_elastic_stack_version }}"
 
 - name: Replace passchangeme in .env file with the ludus_elastic_password
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
-    regexp: 'passchangeme'
+    regexp: "passchangeme"
     replace: "{{ ludus_elastic_password }}"
     backup: true
 
@@ -95,29 +112,34 @@
 - name: Replace elastichostchangeme in files/kibana.yml file with the ansible_host
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/kibana.yml"
-    regexp: 'elastichostchangeme'
+    regexp: "elastichostchangeme"
     replace: "{{ ansible_host }}"
 
 - name: Replace passchangeme in files/kibana.yml files with the ludus_elastic_password
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/kibana.yml"
-    regexp: 'passchangeme'
+    regexp: "passchangeme"
     replace: "{{ ludus_elastic_password }}"
 
 - name: "Running ./elastic-container.sh start in the directory: {{ ludus_elastic_container_install_path }}"
-  ansible.builtin.shell: ./elastic-container.sh start
+  ansible.builtin.command: ./elastic-container.sh start
   args:
     chdir: "{{ ludus_elastic_container_install_path }}"
   register: elastic_container_start
   timeout: 500
+  ignore_errors: true
+  changed_when: true
 
 - name: Wait for the container to be listening on port 5601
   ansible.builtin.wait_for:
     host: "{{ ansible_host }}"
     port: 5601
     state: started
-    delay: 5
+    delay: 30
     timeout: 300
+    sleep: 5
+  register: wait_result
+  failed_when: wait_result.elapsed > 300 or wait_result.state != 'started'
 
 - name: Get Elastic agents if needed
   run_once: true
@@ -166,8 +188,8 @@
 - name: Replace values in kibana-setup.py file
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/kibana-setup.py"
-    regexp: 'fleetserverchangeme'
-    replace: '{{ ansible_host }}'
+    regexp: "fleetserverchangeme"
+    replace: "{{ ansible_host }}"
     backup: true
 
 - name: Move requirements.txt file to the host
@@ -176,18 +198,39 @@
     dest: "{{ ludus_elastic_container_install_path }}/requirements.txt"
     mode: "0600"
 
-- name: Install the required python packages
+- name: Print major version
+  ansible.builtin.debug:
+    msg: "OS Version: {{ ansible_distribution_major_version }}"
+
+- name: Install the required python packages on Debian 12
   ansible.builtin.pip:
     requirements: "{{ ludus_elastic_container_install_path }}/requirements.txt"
     executable: pip3
     extra_args: --break-system-packages
+  when: ansible_distribution == 'Debian' and ansible_distribution_major_version == '12'
+
+- name: Install the required python packages on Debian 11
+  ansible.builtin.pip:
+    requirements: "{{ ludus_elastic_container_install_path }}/requirements.txt"
+    executable: pip3
+  when: ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+- name: Check port 5601 one more time if it failed before
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: 5601
+    state: started
+    delay: 30
+    timeout: 300
+    sleep: 5
 
 - name: Run kibana-setup.py
-  ansible.builtin.shell: python3 ./kibana-setup.py
+  ansible.builtin.command: python3 ./kibana-setup.py
   args:
     chdir: "{{ ludus_elastic_container_install_path }}"
   register: kibana_setup
   ignore_errors: true
+  changed_when: false
 
 - name: Get the elastic token
   ansible.builtin.slurp:
@@ -198,7 +241,7 @@
   ansible.builtin.debug:
     msg: "{{ kibana_setup.stdout_lines }}"
 
-- name: Alert
+- name: Inform the user that the Elastic Container Project is up and running
   ansible.builtin.debug:
     msg: |
       Elastic Container Project is up and running. Access it at https://{{ ansible_host }}:5601 Access with: elastic:{{ ludus_elastic_password }}
