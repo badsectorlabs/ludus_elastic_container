@@ -2,4 +2,4 @@
 ludus_elastic_container_install_path: /opt/elastic_container
 ludus_elastic_password: "elasticpassword"
 ludus_elastic_stack_version: "8.12.2"
-elastic_container_branch: main
+ludus_elastic_container_branch: 05c0b91a36a0918d095c28295a9c64a9def275f5 # Known good commit, 2024-07-03
