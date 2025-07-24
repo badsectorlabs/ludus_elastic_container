@@ -57,6 +57,28 @@ ludus:
       ludus_elastic_password: "hellofromtheotherside"
 ```
 
+Set the `role_vars` to install Elastic v9.X:
+```yaml
+ludus:
+  - vm_name: "{{ range_id }}-elastic-server"
+    hostname: "{{ range_id }}-elastic-server"
+    template: debian-12-x64-server-template
+    vlan: 20
+    ip_last_octet: 2
+    ram_gb: 8
+    cpus: 4
+    linux: true
+    testing:
+      snapshot: false
+      block_internet: false
+    roles:
+      - badsectorlabs.ludus_elastic_container
+    role_vars:
+      ludus_elastic_password: "hellofromtheotherside"
+      ludus_elastic_stack_version: "9.0.1"
+      ludus_elastic_container_branch: "HEAD"
+```
+
 ## Ludus setup
 
 ```
