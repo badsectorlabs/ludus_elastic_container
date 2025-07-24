@@ -19,8 +19,8 @@ Available variables are listed below, along with default values (see `defaults/m
 
     ludus_elastic_container_install_path: /opt/elastic_container
     ludus_elastic_password: "elasticpassword"
-    ludus_elastic_stack_version: "8.12.2"
-    ludus_elastic_container_branch: 05c0b91a36a0918d095c28295a9c64a9def275f5 # Known good commit, 2024-07-03
+    ludus_elastic_stack_version: "9.0.1"
+    ludus_elastic_container_branch: HEAD
 
 ## Dependencies
 
@@ -57,7 +57,7 @@ ludus:
       ludus_elastic_password: "hellofromtheotherside"
 ```
 
-Set the `role_vars` to install Elastic v9.X:
+Set the `role_vars` to install Elastic v8.X:
 ```yaml
 ludus:
   - vm_name: "{{ range_id }}-elastic-server"
@@ -75,8 +75,8 @@ ludus:
       - badsectorlabs.ludus_elastic_container
     role_vars:
       ludus_elastic_password: "hellofromtheotherside"
-      ludus_elastic_stack_version: "9.0.1"
-      ludus_elastic_container_branch: "HEAD"
+      ludus_elastic_stack_version: "8.12.2"
+      ludus_elastic_container_branch: 05c0b91a36a0918d095c28295a9c64a9def275f5 # Known good commit, 2024-07-03
 ```
 
 ## Ludus setup
@@ -97,7 +97,7 @@ ludus range deploy -t user-defined-roles
 
 - Once deployed, access the kibana UI at `https://<IP>:5601`
 
-- In Kibana UI, you can enable your own detection rules (to trigger alerts). By default the Windows, Linux and MacOS rules are enabled by default to get the user started quickly. This is a [good reference](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) on how to manage detection rules.
+- In Kibana UI, you can enable your own detection rules (to trigger alerts). The Windows, Linux and MacOS detection rules are enabled by default to get the user started quickly. This is a [good reference](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) on how to manage detection rules.
 
 ## License
 
