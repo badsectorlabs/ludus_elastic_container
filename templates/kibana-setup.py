@@ -17,7 +17,7 @@ with open('.env', 'r') as file:
 
 ELASTIC_USER = 'elastic'
 KIBANA_URL = 'https://localhost:5601'
-ELASTIC_SERVER = "fleetserverchangeme"
+ELASTIC_SERVER = "{{ elastic_host }}"
 FLEET_SERVER_URL = "https://" + ELASTIC_SERVER + ":8220"
 ELASTISEARCH_URL = "https://" + ELASTIC_SERVER + ":9200"
 
@@ -26,7 +26,7 @@ ELASTIC_WINDOWS_VERSION = '1.44.4'
 
 def get_enrollment_token():
     # Define the URL for the Fleet's enrollment API
-    url = f"{KIBANA_URL}/api/fleet/enrollment-api-keys"
+    url = f"{KIBANA_URL}{{ kibana_enrollment_endpoint }}"
 
     # Define the headers for the request
     headers = {

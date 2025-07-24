@@ -42,23 +42,25 @@
     replace: "{{ ludus_elastic_password }}"
     backup: true
 
-- name: Move and replace kibana.yml file to the host
-  ansible.builtin.copy:
-    src: files/kibana.yml
+#### Install the containers
+
+- ansible.builtin.set_fact:
+    telemetry_settings: |
+      telemetry.optIn: false
+      telemetry.allowChangingOptInStatus: false
+    elastic_host: "{{ ansible_host }}"
+
+- ansible.builtin.set_fact:
+    telemetry_settings: |
+      telemetry.enabled: "false"
+  when: ludus_elastic_stack_version is match("^[1-8]\\.")
+
+- name: 
+  ansible.builtin.template:
+    src: templates/kibana.yml.j2
     dest: "{{ ludus_elastic_container_install_path }}/kibana.yml"
     mode: "0644"
 
-- name: Replace elastichostchangeme in files/kibana.yml file with the ansible_host
-  ansible.builtin.replace:
-    path: "{{ ludus_elastic_container_install_path }}/kibana.yml"
-    regexp: "elastichostchangeme"
-    replace: "{{ ansible_host }}"
-
-- name: Replace passchangeme in files/kibana.yml files with the ludus_elastic_password
-  ansible.builtin.replace:
-    path: "{{ ludus_elastic_container_install_path }}/kibana.yml"
-    regexp: "passchangeme"
-    replace: "{{ ludus_elastic_password }}"
 
 - name: "Running ./elastic-container.sh start in the directory: {{ ludus_elastic_container_install_path }}"
   ansible.builtin.command: ./elastic-container.sh start
@@ -131,18 +133,24 @@
       delegate_to: localhost
       when: not linux_agent_exists.stat.exists
 
+
+### Configure Kibana
+
+
+- ansible.builtin.set_fact:
+    kibana_enrollment_endpoint: "/api/fleet/enrollment_api_keys"
+
+- ansible.builtin.set_fact:
+    kibana_enrollment_endpoint: "/api/fleet/enrollment-api-keys"
+  when: ludus_elastic_stack_version is match("^[1-8]\\.")
+
+
 - name: Move kibana-setup.py file to the host
-  ansible.builtin.copy:
-    src: files/kibana-setup.py
+  ansible.builtin.template:
+    src: templates/kibana-setup.py
     dest: "{{ ludus_elastic_container_install_path }}/kibana-setup.py"
     mode: "0700"
 
-- name: Replace values in kibana-setup.py file
-  ansible.builtin.replace:
-    path: "{{ ludus_elastic_container_install_path }}/kibana-setup.py"
-    regexp: "fleetserverchangeme"
-    replace: "{{ ansible_host }}"
-    backup: true
 
 - name: Move requirements.txt file to the host
   ansible.builtin.copy:
