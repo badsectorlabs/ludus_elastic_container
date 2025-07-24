@@ -21,8 +21,46 @@ ELASTIC_SERVER = "{{ elastic_host }}"
 FLEET_SERVER_URL = "https://" + ELASTIC_SERVER + ":8220"
 ELASTISEARCH_URL = "https://" + ELASTIC_SERVER + ":9200"
 
-ELASTIC_ENDPOINT_VERSION = '8.12.0'
-ELASTIC_WINDOWS_VERSION = '1.44.4'
+def get_latestversion_of_integration(integration_name):
+    url = f"{KIBANA_URL}/api/fleet/epm/packages/{integration_name}"
+
+    # Define the headers for the request
+    headers = {
+        "Content-Type": "application/json",
+        'kbn-xsrf': 'true'
+    }
+
+    # Send the GET request
+    try:
+        response = requests.get(url, headers=headers, auth=(ELASTIC_USER, ELASTIC_PASSWORD), verify=False)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as errh:
+        print("Http Error:",errh)
+        return None
+    except requests.exceptions.ConnectionError as errc:
+        print("Error Connecting:",errc)
+        return None
+    except requests.exceptions.Timeout as errt:
+        print("Timeout Error:",errt)
+        return None
+    except requests.exceptions.RequestException as err:
+        print("Something went wrong",err)
+        return None
+
+    # Check the response
+    if response.status_code == 200:
+        print(f"Latest {integration_name} version retrieved successfully.")
+        data = response.json()
+        
+        if data and 'item' in data:
+            print(f"Found latest {integration_name} version: ", data['item']['latestVersion'])
+            return data['item']['latestVersion']
+        else:
+            print("No latest Defend version found.")
+            return None
+    else:
+        print(f"Failed to retrieve latest Defend version. Status code: {response.status_code}, Response: {response.text}")
+        return None
 
 def get_enrollment_token():
     # Define the URL for the Fleet's enrollment API
@@ -665,6 +703,12 @@ if __name__ == "__main__":
     print(f'Agent Policy Created: {policy_name}')
     
     agent_policy_id = agent_policy_res['item']['id']
+
+    ELASTIC_ENDPOINT_VERSION = get_latestversion_of_integration("endpoint")
+    if not ELASTIC_ENDPOINT_VERSION:
+        ELASTIC_ENDPOINT_VERSION = '8.12.0'
+    
+    print(f"Going to add Elastic Defend integration v{ELASTIC_ENDPOINT_VERSION}")
     
     integration_res = add_defend_integration(agent_policy_id, ELASTIC_ENDPOINT_VERSION)
     if integration_res is None:
@@ -680,6 +724,12 @@ if __name__ == "__main__":
         print("Failed to update Defend integration.")
         exit(1)
     print(f'Defend Integration Updated: {update_defend.status_code}')
+    
+    ELASTIC_WINDOWS_VERSION = get_latestversion_of_integration("windows")
+    if not ELASTIC_WINDOWS_VERSION:
+        ELASTIC_WINDOWS_VERSION = '1.44.4'
+
+    print(f"Going to add Windows integration v{ELASTIC_WINDOWS_VERSION}")
     
     windows_response = add_windows_integration(agent_policy_id, ELASTIC_WINDOWS_VERSION)
     if windows_response is None:
@@ -701,7 +751,3 @@ if __name__ == "__main__":
 
     with open('enrollment_token.txt', 'w') as f:
         f.write(enrollment_token)
-
-    
-
-    

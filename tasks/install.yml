@@ -143,7 +143,7 @@
 
 - name: Move kibana-setup.py file to the host
   ansible.builtin.template:
-    src: templates/kibana-setup.py
+    src: templates/kibana-setup.py.j2
     dest: "{{ ludus_elastic_container_install_path }}/kibana-setup.py"
     mode: "0700"
 
