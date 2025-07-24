@@ -42,18 +42,20 @@
     replace: "{{ ludus_elastic_password }}"
     backup: true
 
-- ansible.builtin.set_fact:
+- name: Set the telemetry setting keys
+  ansible.builtin.set_fact:
     telemetry_settings: |
       telemetry.optIn: false
       telemetry.allowChangingOptInStatus: false
     elastic_host: "{{ ansible_host }}"
 
-- ansible.builtin.set_fact:
+- name: Overwrite the telemetery setting keys for < v9.x
+  ansible.builtin.set_fact:
     telemetry_settings: |
       telemetry.enabled: "false"
   when: ludus_elastic_stack_version is match("^[1-8]\\.")
 
-- name: 
+- name: Template out the kibana.yml file
   ansible.builtin.template:
     src: templates/kibana.yml.j2
     dest: "{{ ludus_elastic_container_install_path }}/kibana.yml"
@@ -130,10 +132,12 @@
       delegate_to: localhost
       when: not linux_agent_exists.stat.exists
 
-- ansible.builtin.set_fact:
+- name: Set the enrollmenttoken api path
+  ansible.builtin.set_fact:
     kibana_enrollment_endpoint: "/api/fleet/enrollment_api_keys"
 
-- ansible.builtin.set_fact:
+- name: Overwrite the enrollmenttoken api path for < v9.x
+  ansible.builtin.set_fact:
     kibana_enrollment_endpoint: "/api/fleet/enrollment-api-keys"
   when: ludus_elastic_stack_version is match("^[1-8]\\.")
 
