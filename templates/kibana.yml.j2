@@ -1,5 +1,5 @@
 server.host: "0.0.0.0"
-telemetry.enabled: "false"
+{{ telemetry_settings }}
 xpack.encryptedSavedObjects.encryptionKey: "something_at_least_32_characters"
 xpack.fleet.outputs:
   - id: fleet-default-output
@@ -7,7 +7,7 @@ xpack.fleet.outputs:
     is_default: true
     is_default_monitoring: true
     type: elasticsearch
-    hosts: ["https://elastichostchangeme:9200"]
+    hosts: ["https://{{ elastic_host }}:9200"]
     ssl.verification_mode: none
 xpack.fleet.packages:
   - name: fleet_server
