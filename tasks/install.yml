@@ -53,7 +53,7 @@
   ansible.builtin.set_fact:
     telemetry_settings: |
       telemetry.enabled: "false"
-  when: ludus_elastic_stack_version is match("^[1-8]\\.")
+  when: ludus_elastic_stack_version is version("9.0.0", "<")
 
 - name: Template out the kibana.yml file
   ansible.builtin.template:
