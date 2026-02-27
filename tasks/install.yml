@@ -32,14 +32,14 @@
 - name: Replace stackreplace me in .env file with the ludus_elastic_stack_version
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
-    regexp: "stackchangeme"
-    replace: "{{ ludus_elastic_stack_version }}"
+    regexp: '^STACK_VERSION=.*$'
+    replace: 'STACK_VERSION={{ ludus_elastic_stack_version }}'
 
 - name: Replace passchangeme in .env file with the ludus_elastic_password
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
-    regexp: "passchangeme"
-    replace: "{{ ludus_elastic_password }}"
+    regexp: 'PASSWORD=.*$'
+    replace: 'PASSWORD={{ elastic_password }}'
     backup: true
 
 - name: Set the telemetry setting keys
