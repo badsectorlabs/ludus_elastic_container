@@ -17,10 +17,12 @@ None.
 
 Available variables are listed below, along with default values (see `defaults/main.yml`):
 
-    ludus_elastic_container_install_path: /opt/elastic_container
-    ludus_elastic_password: "elasticpassword"
-    ludus_elastic_stack_version: "9.0.1"
-    ludus_elastic_container_branch: HEAD
+```yaml
+ludus_elastic_container_install_path: /opt/elastic_container
+ludus_elastic_password: "elasticpassword"
+ludus_elastic_stack_version: "9.3.1"
+ludus_elastic_container_branch: HEAD
+```
 
 ## Dependencies
 
