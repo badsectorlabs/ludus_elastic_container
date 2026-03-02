@@ -39,7 +39,7 @@
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
     regexp: 'PASSWORD=.*$'
-    replace: 'PASSWORD={{ elastic_password }}'
+    replace: 'PASSWORD={{ ludus_elastic_password }}'
     backup: true
 
 - name: Set the telemetry setting keys
