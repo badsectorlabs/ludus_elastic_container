@@ -6,6 +6,20 @@
     single_branch: true
     force: true
 
+- name: Fix elastic-agent image path for Elastic 9.x (beats namespace removed)
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/docker-compose.yml"
+    regexp: 'docker\.elastic\.co/beats/elastic-agent:'
+    replace: 'docker.elastic.co/elastic-agent/elastic-agent:'
+  when: ludus_elastic_stack_version is version("9.0.0", ">=")
+
+- name: Fix Kibana health check for HTTP/2 (Elastic 9.x uses HTTP/2, not HTTP/1.1)
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/docker-compose.yml"
+    regexp: "grep -q 'HTTP/1\\.1 302 Found'"
+    replace: "grep -q '302'"
+  when: ludus_elastic_stack_version is version("9.0.0", ">=")
+
 - name: Copy the .env template to the host
   ansible.builtin.template:
     src: files/env.example
