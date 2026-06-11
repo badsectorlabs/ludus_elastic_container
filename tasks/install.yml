@@ -17,13 +17,19 @@
 
 - name: Register memory of the host to replace in .env file and register only 75% of the memory
   ansible.builtin.set_fact:
-    host_memory_bytes: "{{ ansible_memtotal_mb * 1024 * 1024 * 0.75 }}"
+    host_memory_mb: "{{ ansible_memtotal_mb * 0.75 | int }}" # Leave 25% for other processes
 
-- name: Memory being used by Kibana
+- name: Memory limit for Kibana
   ansible.builtin.debug:
-    msg: "Host memory: {{ host_memory_bytes }}"
+    msg: "Kibana memory limit: {{ host_memory_mb }} mb"
 
-- name: Replace memreplaceme in .env file with the memory of the host
+- name: Replace memory limit in .env file with host_memory_mb
+  ansible.builtin.replace:
+    path: "{{ ludus_elastic_container_install_path }}/.env"
+    regexp: 'MEM_LIMIT=.*$'
+    replace: 'MEM_LIMIT={{ host_memory_mb * 1024 * 1024}}' # Convert from mb to bytes
+
+- name: Replace LICENCE type in .env file with ludus_elastic_license_type
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
     regexp: "memchangeme"
