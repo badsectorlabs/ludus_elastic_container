@@ -32,16 +32,16 @@
 - name: Replace LICENCE type in .env file with ludus_elastic_license_type
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
-    regexp: "memchangeme"
-    replace: "{{ host_memory_bytes }}"
+    regexp: '^LICENSE=.*$'
+    replace: 'LICENSE={{ ludus_elastic_license_type }}'
 
-- name: Replace stackreplace me in .env file with the ludus_elastic_stack_version
+- name: Replace version in .env file with ludus_elastic_stack_version
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
     regexp: '^STACK_VERSION=.*$'
     replace: 'STACK_VERSION={{ ludus_elastic_stack_version }}'
 
-- name: Replace passchangeme in .env file with the ludus_elastic_password
+- name: Replace password in .env file with ludus_elastic_password
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
     regexp: 'PASSWORD=.*$'
@@ -145,7 +145,7 @@
 - name: Overwrite the enrollmenttoken api path for < v9.x
   ansible.builtin.set_fact:
     kibana_enrollment_endpoint: "/api/fleet/enrollment-api-keys"
-  when: ludus_elastic_stack_version is match("^[1-8]\\.")
+  when: ludus_elastic_stack_version is version("9.0.0", "<")
 
 - name: Move kibana-setup.py file to the host
   ansible.builtin.template:
