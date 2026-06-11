@@ -97,9 +97,8 @@ ludus range config set -f config.yml
 ludus range deploy -t user-defined-roles
 ```
 
-- Once deployed, access the kibana UI at `https://<IP>:5601`
-
-- In Kibana UI, you can enable your own detection rules (to trigger alerts). The Windows, Linux and MacOS detection rules are enabled by default to get the user started quickly. This is a [good reference](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) on how to manage detection rules.
+- The Kibana UI is at `https://<IP>:5601`
+  - In Kibana UI, you can enable your own detection rules (to trigger alerts). The Windows, Linux and MacOS detection rules are enabled by default to get the user started quickly. This is a [good reference](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) on how to manage detection rules.
 
 ## License
 
