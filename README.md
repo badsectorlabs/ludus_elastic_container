@@ -20,7 +20,7 @@ Available variables are listed below, along with default values (see `defaults/m
 ```yaml
 ludus_elastic_container_install_path: /opt/elastic_container
 ludus_elastic_password: "elasticpassword"
-ludus_elastic_stack_version: "9.3.1"
+ludus_elastic_stack_version: "9.4.2"
 ludus_elastic_container_branch: HEAD
 ```
 
@@ -112,6 +112,6 @@ This role was created by [Bad Sector Labs](https://badsectorlabs.com/), for [Lud
 ## Resources/Credits
 
 - Excellent blog post from Elastic [Security Labs](https://www.elastic.co/security-labs/the-elastic-container-project)
-- This role heavily utilized this [awesome project](https://github.com/peasead/elastic-container) by @peasead
-- [Kibana Fleet API](https://www.elastic.co/guide/en/fleet/8.12/fleet-api-docs.html)
-- [Elastic Integrations](https://www.elastic.co/guide/en/security/8.12/create-defend-policy-api.html)
+- This role heavily utilized this [awesome project](https://github.com/peasead/elastic-container) by [@peasead](https://github.com/peasead)
+- [Kibana Fleet API](https://www.elastic.co/docs/reference/kibana/configuration-reference/fleet-settings)
+- [Elastic Integrations](https://www.elastic.co/integrations/data-integrations?solution=security)
