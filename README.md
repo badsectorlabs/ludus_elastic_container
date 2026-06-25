@@ -97,9 +97,12 @@ ludus range config set -f config.yml
 ludus range deploy -t user-defined-roles
 ```
 
-- Once deployed, access the kibana UI at `https://<IP>:5601`
+- The Kibana UI is at `https://<IP>:5601`
+  - In Kibana UI, you can enable your own detection rules (to trigger alerts). The Windows, Linux and MacOS detection rules are enabled by default to get the user started quickly. This is a [good reference](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) on how to manage detection rules.
 
-- In Kibana UI, you can enable your own detection rules (to trigger alerts). The Windows, Linux and MacOS detection rules are enabled by default to get the user started quickly. This is a [good reference](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) on how to manage detection rules.
+### Trial License
+
+By default, the role will install with a "basic" license. If you want to use a trial license, set `ludus_elastic_license_type` to `trial`. This enables more features, and lasts for 30 days. See [Elastic License Types](https://www.elastic.co/subscriptions) for more information.
 
 ## License
 
