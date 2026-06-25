@@ -61,37 +61,22 @@
     dest: "{{ ludus_elastic_container_install_path }}/kibana.yml"
     mode: "0644"
 
-- name: "Running ./elastic-container.sh start in the directory: {{ ludus_elastic_container_install_path }}"
+- name: Start elastic-container
   ansible.builtin.command: ./elastic-container.sh start
   args:
     chdir: "{{ ludus_elastic_container_install_path }}"
   register: elastic_container_start
-  retries: 3
-  delay: 3
-  async: 1200 # 20 minutes
-  poll: 0
-  timeout: 500
-  ignore_errors: true
+  async: 2000 # Allow up to 30 minutes
+  poll: 10    # Poll every 10 seconds until finished
   changed_when: true
 
-- name: Wait for elastic-container.sh start
-  ansible.builtin.async_status:
-    jid: "{{ elastic_container_start.ansible_job_id }}"
-  register: job_result
-  until: job_result.finished
-  retries: 120 # 20 minutes
-  delay: 10
-
-- name: Wait for the container to be listening on port 5601
+- name: Wait for Kibana to listen on port 5601
   ansible.builtin.wait_for:
     host: "{{ ansible_host }}"
     port: 5601
     state: started
-    delay: 30
+    delay: 10
     timeout: 300
-    sleep: 5
-  register: wait_result
-  failed_when: wait_result.elapsed > 300 or wait_result.state != 'started'
 
 - name: Get Elastic agents if needed
   run_once: true
