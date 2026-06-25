@@ -27,9 +27,9 @@
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
     regexp: 'MEM_LIMIT=.*$'
-    replace: 'MEM_LIMIT={{ host_memory_mb * 1024 * 1024}}' # Convert from mb to bytes
+    replace: 'MEM_LIMIT={{ host_memory_mb * 1024 * 1024 }}' # Convert from mb to bytes
 
-- name: Replace LICENCE type in .env file with ludus_elastic_license_type
+- name: Replace LICENSE type in .env file with ludus_elastic_license_type
   ansible.builtin.replace:
     path: "{{ ludus_elastic_container_install_path }}/.env"
     regexp: '^LICENSE=.*$'
@@ -55,7 +55,7 @@
       telemetry.allowChangingOptInStatus: false
     elastic_host: "{{ ansible_host }}"
 
-- name: Overwrite the telemetery setting keys for < v9.x
+- name: Overwrite the telemetry setting keys for < v9.x
   ansible.builtin.set_fact:
     telemetry_settings: |
       telemetry.enabled: "false"
@@ -123,11 +123,11 @@
       delegate_to: localhost
       when: not linux_agent_exists.stat.exists
 
-- name: Set the enrollmenttoken api path
+- name: Set the enrollment token api path
   ansible.builtin.set_fact:
     kibana_enrollment_endpoint: "/api/fleet/enrollment_api_keys"
 
-- name: Overwrite the enrollmenttoken api path for < v9.x
+- name: Overwrite the enrollment token api path for < v9.x
   ansible.builtin.set_fact:
     kibana_enrollment_endpoint: "/api/fleet/enrollment-api-keys"
   when: ludus_elastic_stack_version is version("9.0.0", "<")

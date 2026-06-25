@@ -19,9 +19,10 @@ Available variables are listed below, along with default values (see `defaults/m
 
 ```yaml
 ludus_elastic_container_install_path: /opt/elastic_container
-ludus_elastic_password: "elasticpassword"
+ludus_elastic_password: elasticpassword
 ludus_elastic_stack_version: "9.4.2"
 ludus_elastic_container_branch: HEAD
+ludus_elastic_license_type: "basic" # basic, trial, or platinum
 ```
 
 ## Dependencies
